@@ -647,7 +647,8 @@ app.registerExtension({
           ctx.font = "11px sans-serif";
           ctx.textAlign = "left";
           const shortName = item.name.includes("/") ? item.name.substring(item.name.lastIndexOf("/") + 1) : (item.name.includes("\\") ? item.name.substring(item.name.lastIndexOf("\\") + 1) : item.name);
-          ctx.fillText(shortName, btnX + 10, btnY + 14);
+          ctx.fillText("≡", btnX + 7, btnY + 14);
+          ctx.fillText(shortName, btnX + 24, btnY + 14);
           ctx.restore();
 
           ctx.fillStyle = "#222";
@@ -705,21 +706,15 @@ app.registerExtension({
       }
     }
 
-    function finishRowDrag(e, allowClick = true) {
+    function finishRowDrag(e, apply = true) {
       if (!rowDrag) return false;
       const drag = rowDrag;
-      if (allowClick && e?.clientY !== undefined) updateRowDrag(e);
+      if (apply && e?.clientY !== undefined) updateRowDrag(e);
       rowDrag = null;
       window.removeEventListener("mouseup", finishRowDrag, true);
       window.removeEventListener("blur", cancelRowDrag);
       node.captureInput?.(false);
-      if (allowClick && !drag.moved) {
-        openLoraPicker((selectedName, selectedStrength) => {
-          drag.item.name = selectedName;
-          drag.item.strength = selectedStrength !== undefined ? selectedStrength : 1.0;
-          syncData();
-        });
-      } else if (allowClick && drag.target !== drag.startIndex) {
+      if (apply && drag.target !== drag.startIndex) {
         node.loraList.splice(drag.startIndex, 1);
         node.loraList.splice(drag.target, 0, drag.item);
         syncData();
@@ -845,10 +840,18 @@ app.registerExtension({
           }
 
           if (pos[0] >= btnX && pos[0] <= btnX + btnW && pos[1] >= btnY && pos[1] <= btnY + btnH) {
-            rowDrag = { item, startIndex: index, target: index, startY: e.clientY, moved: false };
-            node.captureInput?.(true);
-            window.addEventListener("mouseup", finishRowDrag, true);
-            window.addEventListener("blur", cancelRowDrag);
+            if (pos[0] < btnX + 22) {
+              rowDrag = { item, startIndex: index, target: index, startY: e.clientY, moved: false };
+              node.captureInput?.(true);
+              window.addEventListener("mouseup", finishRowDrag, true);
+              window.addEventListener("blur", cancelRowDrag);
+            } else {
+              openLoraPicker((selectedName, selectedStrength) => {
+                item.name = selectedName;
+                item.strength = selectedStrength !== undefined ? selectedStrength : 1.0;
+                syncData();
+              });
+            }
             return true;
           }
 
