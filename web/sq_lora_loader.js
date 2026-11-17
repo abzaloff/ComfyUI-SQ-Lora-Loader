@@ -500,8 +500,8 @@ app.registerExtension({
       input.select();
 
       function submit() {
-        let val = parseFloat(input.value);
-        if (!isNaN(val)) {
+        const val = parseFloat(input.value);
+        if (Number.isFinite(val)) {
           onChange(Math.max(-10, Math.min(10, val)));
         }
         if (document.body.contains(popup)) {
@@ -516,7 +516,6 @@ app.registerExtension({
       };
 
       popup.onmousedown = (e) => e.stopPropagation();
-      
       setTimeout(() => {
         const outsideClick = (e) => {
           if (!popup.contains(e.target)) {
@@ -732,9 +731,12 @@ app.registerExtension({
       if (!strengthDrag) return false;
       const drag = strengthDrag;
       strengthDrag = null;
+      window.removeEventListener("pointermove", moveStrengthDrag, true);
+      window.removeEventListener("mousemove", moveStrengthDrag, true);
+      window.removeEventListener("pointerup", finishStrengthDrag, true);
       window.removeEventListener("mouseup", finishStrengthDrag, true);
       window.removeEventListener("blur", cancelStrengthDrag);
-      node.captureInput?.(false);
+      if (drag.captured) node.captureInput?.(false);
       if (openInput && !drag.moved) {
         openStrengthInput(drag.item.strength, e.clientX, e.clientY, (newVal) => {
           drag.item.strength = newVal;
@@ -744,20 +746,21 @@ app.registerExtension({
       return true;
     }
 
-    function cancelStrengthDrag(e) {
-      finishStrengthDrag(e, false);
+    function cancelStrengthDrag() {
+      finishStrengthDrag(null, false);
     }
 
-    node.onMouseMove = function(e) {
-      if (rowDrag) {
-        if (e.buttons === 0) return finishRowDrag(e);
-        updateRowDrag(e);
-        return true;
-      }
+    function moveStrengthDrag(e) {
       if (!strengthDrag) return false;
       if (e.buttons === 0) return finishStrengthDrag(e);
       const distance = e.clientX - strengthDrag.startX;
-      if (Math.abs(distance) >= 3) strengthDrag.moved = true;
+      if (!strengthDrag.moved && Math.abs(distance) >= 3) {
+        strengthDrag.moved = true;
+        strengthDrag.captured = true;
+        node.captureInput?.(true);
+        window.removeEventListener("pointermove", moveStrengthDrag, true);
+        window.removeEventListener("mousemove", moveStrengthDrag, true);
+      }
       if (strengthDrag.moved) {
         const next = Math.max(-10, Math.min(10, Math.round((strengthDrag.startValue + distance / 300) * 100) / 100));
         if (next !== strengthDrag.item.strength) {
@@ -766,6 +769,15 @@ app.registerExtension({
         }
       }
       return true;
+    }
+
+    node.onMouseMove = function(e) {
+      if (rowDrag) {
+        if (e.buttons === 0) return finishRowDrag(e);
+        updateRowDrag(e);
+        return true;
+      }
+      return moveStrengthDrag(e);
     };
 
     node.onMouseUp = function(e) {
@@ -864,8 +876,10 @@ app.registerExtension({
               item.strength = Math.min(10, item.strength + 0.05);
               syncData();
             } else {
-              strengthDrag = { item, startX: e.clientX, startValue: item.strength, moved: false };
-              node.captureInput?.(true);
+              strengthDrag = { item, startX: e.clientX, startValue: item.strength, moved: false, captured: false };
+              window.addEventListener("pointermove", moveStrengthDrag, true);
+              window.addEventListener("mousemove", moveStrengthDrag, true);
+              window.addEventListener("pointerup", finishStrengthDrag, true);
               window.addEventListener("mouseup", finishStrengthDrag, true);
               window.addEventListener("blur", cancelStrengthDrag);
             }
