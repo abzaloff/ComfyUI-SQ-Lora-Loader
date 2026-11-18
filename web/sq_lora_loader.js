@@ -561,11 +561,6 @@ app.registerExtension({
     node.onDrawForeground = function(ctx) {
       if (node.flags.collapsed) return;
 
-      const currentScale = ctx.getTransform().a;
-      if (currentScale < 0.55) {
-        return;
-      }
-
       const isBypassed = node.mode === 2 || node.mode === 4 || node.mode === 3;
       ctx.save();
       if (isBypassed) {
@@ -577,7 +572,7 @@ app.registerExtension({
 
       ctx.fillStyle = allActiveState ? "#4caf50" : "#555";
       ctx.beginPath();
-      ctx.arc(marginX + 8, 62, 6, 0, Math.PI * 2);
+      ctx.arc(marginX + 8, 62, 7, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = "#aaa";
@@ -626,7 +621,7 @@ app.registerExtension({
         } else {
           ctx.fillStyle = item.active ? "#4caf50" : "#555";
           ctx.beginPath();
-          ctx.arc(marginX + 8, y + 3, 6, 0, Math.PI * 2);
+          ctx.arc(marginX + 8, y + 3, 7, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = "#222";
@@ -787,10 +782,6 @@ app.registerExtension({
     node.onMouseDown = function(e, pos) {
       if (node.mode === 2 || node.mode === 4 || node.mode === 3) return false;
 
-      if (app && app.canvas && app.canvas.ds && app.canvas.ds.scale < 0.6) {
-        return false;
-      }
-
       const marginX = 10;
       let startY = 82;
 
@@ -845,7 +836,7 @@ app.registerExtension({
             return true;
           }
 
-          if (pos[0] >= marginX && pos[0] <= marginX + 18 && pos[1] >= y - 6 && pos[1] <= y + 12) {
+          if (pos[0] >= marginX - 4 && pos[0] <= marginX + 20 && pos[1] >= y - 9 && pos[1] <= y + 15) {
             item.active = !item.active;
             syncData();
             return true;
